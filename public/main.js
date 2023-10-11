@@ -1,6 +1,4 @@
 /*global UIkit, Vue */
-const wsProto = location.protocol === "https" ? "wss:" : "ws:";
-const loginContainer = document.getElementById("login");
 
 (() => {
   const notification = (config) =>
@@ -43,51 +41,16 @@ const loginContainer = document.getElementById("login");
       desc: "",
       activeTimers: [],
       oldTimers: [],
-      client: null
     },
     methods: {
-      sendMessage(message) {
-        if (this.client.readyState === WebSocket.OPEN) {
-          this.client.send(message);
-        } else {
-          console.log("WebSocket закрыт, состояние", this.client.readyState);
-        }
-      },
-      checkMessage(type, data) {
-        if (!this.client) {
-          this.client = new WebSocket(`${wsProto}//${location.host}`);
-
-          this.client.addEventListener("open", () => {
-            this.sendMessage(JSON.stringify({ type, ...data }));
-          });
-        } else {
-          this.sendMessage(JSON.stringify({ type, ...data }));
-        }
-      },
-      postAllTimers() {
-        fetchJson("/api/timers", {
-          method: "get",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }).then((timers) => {
-          const activeTimers = timers.filter((timer) => timer.end === null);
-          const oldTimers = timers.filter((timer) => timer.end !== null);
+      fetchActiveTimers() {
+        fetchJson("/api/timers?isActive=true").then((activeTimers) => {
           this.activeTimers = activeTimers;
-          this.oldTimers = oldTimers;
-          this.checkMessage("all_timers", { activeTimers, oldTimers });
         });
       },
-      postActiveTimers() {
-        fetchJson("/api/timers", {
-          method: "get",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }).then((timers) => {
-          const activeTimers = timers.filter((timer) => timer.end === null);
-          this.activeTimers = activeTimers;
-          this.checkMessage("active_timers", { activeTimers });
+      fetchOldTimers() {
+        fetchJson("/api/timers?isActive=false").then((oldTimers) => {
+          this.oldTimers = oldTimers;
         });
       },
       createTimer() {
@@ -101,7 +64,7 @@ const loginContainer = document.getElementById("login");
           body: JSON.stringify({ description }),
         }).then(({ id }) => {
           info(`Created new timer "${description}" [${id}]`);
-          this.postAllTimers();
+          this.fetchActiveTimers();
         });
       },
       stopTimer(id) {
@@ -109,7 +72,8 @@ const loginContainer = document.getElementById("login");
           method: "post",
         }).then(() => {
           info(`Stopped the timer [${id}]`);
-          this.postAllTimers();
+          this.fetchActiveTimers();
+          this.fetchOldTimers();
         });
       },
       formatTime(ts) {
@@ -128,42 +92,11 @@ const loginContainer = document.getElementById("login");
       },
     },
     created() {
-      loginContainer.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const username = loginContainer.querySelector(".username").value;
-        const password = loginContainer.querySelector(".password").value;
-
-        fetch("/login", {
-          method: "POST",
-          body: JSON.stringify({ username, password }),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }).then((response) => {
-          if (response.ok) {
-            return response.json();
-          } else {
-            return response.text().then((err) => {
-              throw new Error(err);
-            })
-          }
-        }).then(({ token }) => {
-          this.client = new WebSocket(`${wsProto}//${location.host}?token=${token}`);
-          loginContainer.style.display = "none";
-          this.client.addEventListener('open', () => {
-            this.postAllTimers();
-            setInterval(() => {
-              this.postActiveTimers();
-            }, 1000);
-          });
-        }).catch(err => {
-          console.log(err.message);
-        })
-      })
+      this.fetchActiveTimers();
+      setInterval(() => {
+        this.fetchActiveTimers();
+      }, 1000);
+      this.fetchOldTimers();
     },
-
   });
-
-
-
 })();

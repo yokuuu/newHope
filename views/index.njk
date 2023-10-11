@@ -14,30 +14,9 @@
       .mono {
         font-family: monospace;
       }
-      #login {
-        position: absolute;
-        width: 100vw;
-        height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 100;
-        background-color: white;
-      }
     </style>
   </head>
   <body>
-      <form id="login">
-        <fieldset class="uk-fieldset">
-          <div class="uk-margin">
-            <input class="uk-input username" type="text" placeholder="username">
-          </div>
-          <div class="uk-margin">
-            <input class="uk-input password" type="text" placeholder="password">
-          </div>
-          <button class="uk-button button-primary">Login</button>
-        </fieldset>
-      </form>
     <section id="app" v-cloak class="uk-container uk-margin-top uk-margin-bottom">
       <p>
         <form v-on:submit.prevent="createTimer">
@@ -78,6 +57,7 @@
     <script src="https://cdn.jsdelivr.net/npm/uikit@3.5.4/dist/js/uikit.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/uikit@3.5.4/dist/js/uikit-icons.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
     <script src="/main.js"></script>
   </body>
 </html>
